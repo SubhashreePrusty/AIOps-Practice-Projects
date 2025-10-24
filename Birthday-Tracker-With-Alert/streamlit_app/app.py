@@ -5,7 +5,7 @@ from api_client import add_birthday
 from utils import format_birthday, is_future_date
 
 st.title("🎂 Birthday Tracker")
-st.subheader("This application helps you track birthdays of your friends and send alerts.")
+st.write("This application helps you track birthdays of your friends and send alerts.")
 
 st.markdown("""
 ### Features:
@@ -30,3 +30,6 @@ if st.button("Save"):
     formatted_date = format_birthday(date)
     response = add_birthday(name, formatted_date)
     st.success(response.get("message", "Birthday added!"))
+
+st.button("Next Birthday")  # Placeholder for future functionality
+st.button("Show All Birthdays")  # Placeholder for future functionality
