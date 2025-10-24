@@ -1,11 +1,12 @@
-
+```
+streamlit run streamlit_app/app.py
+```
 
 If there is a problem to create the virtual environment, run this command -
 #### Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 To revert later - 
 #### Set-ExecutionPolicy -ExecutionPolicy Restricted -Scope CurrentUser
-
 
 
 ```
