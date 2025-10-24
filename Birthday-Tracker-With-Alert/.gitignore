@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+
+# Environment files
+.env
+
+# AWS deploy zips
+*.zip
+
+# Streamlit cache
+.streamlit/
+
+# IDE
+.vscode/
+.idea/
