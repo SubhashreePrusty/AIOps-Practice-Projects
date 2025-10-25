@@ -3,6 +3,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from utils import get_logger
+import json
 
 # Load environment variables
 load_dotenv()
@@ -34,28 +35,43 @@ def safe_request(method, url, **kwargs):
 def _handle_response(resp):
     """Unified response handler."""
     if isinstance(resp, dict) and "error" in resp:
-        # This happens if safe_request returned an error dict
         return resp
 
     try:
-        return resp.json()
+        data = resp.json()
+        # Unwrap 'body' if it's a string
+        if isinstance(data, dict) and "body" in data and isinstance(data["body"], str):
+            import json
+            try:
+                data["body"] = json.loads(data["body"])
+                # Merge inner dict if it contains 'items'
+                if "items" in data["body"]:
+                    data = data["body"]
+            except json.JSONDecodeError:
+                pass
+        return data
     except ValueError:
         logger.error("Invalid JSON in API response.")
         return {"error": "Invalid response from backend."}
 
 # ---- CRUD Operations ----
-def add_birthday(name, birthday):
-    payload = {"name": name, "birthday": birthday}
+def add_birthday(name, birthday, email=""):
+    payload = {"name": name, "birthday": birthday, "email": email}
     url = f"{API_BASE_URL}/add_birthday"
-    logger.info("📤 Adding birthday: %s", payload)
     resp = safe_request("POST", url, json=payload)
     return _handle_response(resp)
 
+
 def get_birthdays():
-    logger.info("📥 Fetching all birthdays")
-    url = f"{API_BASE_URL}/get_birthdays"
-    resp = safe_request("GET", url)
-    return _handle_response(resp)
+    response = requests.get(f"{API_BASE_URL}/get_birthdays")
+    try:
+        data = response.json()
+        if isinstance(data, dict) and "body" in data:
+            data = json.loads(data["body"])
+        return data
+    except Exception as e:
+        return {"error": str(e)}
+
 
 def edit_birthday(name, new_date):
     payload = {"name": name, "new_birthday": new_date}

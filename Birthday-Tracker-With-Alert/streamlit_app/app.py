@@ -1,6 +1,6 @@
 import streamlit as st
 import datetime
-
+import json
 from api_client import add_birthday, get_birthdays, edit_birthday, delete_birthday
 from utils import format_birthday, is_future_date
 
@@ -42,14 +42,31 @@ with tab1:
 
 with tab2:
     st.subheader("All Saved Birthdays")
+    birthdays = get_birthdays()
     
-    # birthdays = []
+    # Parse if nested 'body'
+    if isinstance(birthdays, dict) and "body" in birthdays and isinstance(birthdays["body"], str):
+        birthdays = json.loads(birthdays["body"])
 
-    # if birthdays:
-    #     for b in birthdays:
-    #         st.write(f"**{b['name']}** 🎈 — {b['birthday']}")
-    # else:
-    st.info("No birthdays found yet! Add some first 👆")
+    if "error" in birthdays:
+        st.error(f"⚠️ {birthdays['error']}")
+    elif birthdays.get("items"):
+        for idx, b in enumerate(birthdays["items"]):
+            col1, col2, col3 = st.columns([3, 2, 2])  # columns: name/birthday | edit | delete
+
+            # Show name and birthday
+            col1.write(f"**{b['name']}** 🎈 — {b['birthday']}")
+
+            # Delete button
+            delete_key = f"delete_{idx}"
+            if col3.button("🗑️ Delete", key=delete_key):
+                response = delete_birthday(b['name'])
+                if "error" in response:
+                    st.error(response["error"])
+                else:
+                    st.success(f"Deleted {b['name']} successfully!")
+    else:
+        st.info("No birthdays found yet! Add some first 👆")
 
 st.markdown("---")
 st.caption("Built with ❤️ using Streamlit + AWS Lambda + DynamoDB + SNS -- by Subhashree, Shaily, and Pratik!")
