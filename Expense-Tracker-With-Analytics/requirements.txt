@@ -1,0 +1,9 @@
+# Streamlit frontend + data viz
+streamlit
+pandas
+plotly
+matplotlib
+
+# AWS + environment management
+boto3
+python-dotenv
