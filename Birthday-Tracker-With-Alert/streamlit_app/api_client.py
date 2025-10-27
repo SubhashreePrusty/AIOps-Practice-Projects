@@ -72,17 +72,12 @@ def get_birthdays():
     except Exception as e:
         return {"error": str(e)}
 
+def delete_birthday(name, birthday):
+    try:
+        payload = {"name": name, "birthday": birthday}
+        resp = requests.delete(f"{API_BASE_URL}/delete_birthday", json=payload)
+        return resp.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
 
-def edit_birthday(name, new_date):
-    payload = {"name": name, "new_birthday": new_date}
-    logger.info("✏️ Editing birthday: %s", payload)
-    url = f"{API_BASE_URL}/edit_birthday"
-    resp = safe_request("PUT", url, json=payload)
-    return _handle_response(resp)
 
-def delete_birthday(name):
-    payload = {"name": name}
-    logger.info("🗑️ Deleting birthday for %s", name)
-    url = f"{API_BASE_URL}/delete_birthday"
-    resp = safe_request("DELETE", url, json=payload)
-    return _handle_response(resp)

@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 import json
-from api_client import add_birthday, get_birthdays, edit_birthday, delete_birthday
+from api_client import add_birthday, get_birthdays, delete_birthday
 from utils import format_birthday, is_future_date
 
 st.title("🎂 Birthday Tracker")
@@ -52,19 +52,22 @@ with tab2:
         st.error(f"⚠️ {birthdays['error']}")
     elif birthdays.get("items"):
         for idx, b in enumerate(birthdays["items"]):
-            col1, col2, col3 = st.columns([3, 2, 2])  # columns: name/birthday | edit | delete
+            col1, col2 = st.columns([3, 2])  # columns: name/birthday | delete
 
             # Show name and birthday
             col1.write(f"**{b['name']}** 🎈 — {b['birthday']}")
 
             # Delete button
-            delete_key = f"delete_{idx}"
-            if col3.button("🗑️ Delete", key=delete_key):
-                response = delete_birthday(b['name'])
-                if "error" in response:
-                    st.error(response["error"])
-                else:
-                    st.success(f"Deleted {b['name']} successfully!")
+            with col2:
+                delete_key = f"del_{b['name']}_{b['birthday']}"
+
+                if st.button(f"Delete", key=delete_key):
+                    response = delete_birthday(b['name'], b['birthday'])
+                    if "error" in response:
+                        st.error(response["error"])
+                    else:
+                        st.success(response.get("message", "Birthday deleted successfully!"))
+                        st.rerun()  # updated from experimental_rerun
     else:
         st.info("No birthdays found yet! Add some first 👆")
 

@@ -31,8 +31,6 @@ birthday-tracker/
 │   │   └── app.py              # Lambda for adding new birthdays
 │   ├── get_birthdays/
 │   │   └── app.py              # Lambda for viewing birthdays
-│   ├── edit_birthdays/
-│   │   └── app.py              # Lambda for editing birthdays
 │   ├── delete_birthday/
 │   │   └── app.py              # Lambda for deleting a record
 │   └── daily_reminder/
