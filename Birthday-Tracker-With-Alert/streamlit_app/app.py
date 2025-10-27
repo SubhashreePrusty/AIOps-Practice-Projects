@@ -1,8 +1,9 @@
 import streamlit as st
 import datetime
 import json
+from itertools import groupby
 from api_client import add_birthday, get_birthdays, delete_birthday
-from utils import format_birthday, is_future_date
+from utils import format_birthday, is_future_date, next_birthdays
 
 st.title("🎂 Birthday Tracker")
 st.write("This application helps you track birthdays of your friends and send alerts.")
@@ -37,8 +38,42 @@ if st.button("➕ Add Birthday"):
 tab1, tab2 = st.tabs(["🎂 Next Birthday", "📅 View Birthdays"])
 
 with tab1:
-    st.subheader("Next Birthday -- Coming Soon!")
-    st.info("No birthdays found yet! Add some first 👆")
+    st.subheader("Next Birthdays 🎂")
+
+    def fetch_and_compute_next(n=3):
+        records = get_birthdays()
+
+        if isinstance(records, dict) and "items" in records:
+            records = records["items"]
+
+        if not isinstance(records, list):
+            st.warning("⚠️ No valid list of birthdays returned from backend.")
+            return []
+
+        # normalize
+        for r in records:
+            if "birthday" in r and "date" not in r:
+                r["date"] = r["birthday"]
+
+        # st.write("DEBUG: Normalized records →", records)
+        return next_birthdays(records, count=n)
+
+    next_list = fetch_and_compute_next(n=3)
+    # st.write("DEBUG: next_list →", next_list)
+
+    if not next_list:
+        st.info("No upcoming birthdays found.")
+    else:
+        # group by date for nice display
+        for next_date, group in groupby(next_list, key=lambda r: r["next_date"]):
+            group = list(group)
+            st.markdown(f"### 🎂 {next_date}")
+            for rec in group:
+                name = rec.get("name", "Unknown")
+                age = rec["age_on_next"]
+                days = rec["days_left"]
+                st.markdown(f"🎈 **{name}** — turning {age} ({days} days left)")
+
 
 with tab2:
     st.subheader("All Saved Birthdays")
