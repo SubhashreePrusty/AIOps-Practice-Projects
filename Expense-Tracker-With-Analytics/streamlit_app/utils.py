@@ -2,11 +2,13 @@
 
 
 # utils.py
+import os
 import requests
 import pandas as pd
+from dotenv import load_dotenv
 
-# 🔗 Replace this with your API Gateway endpoint
-API_BASE_URL = "https://your-api-gateway-url.amazonaws.com/dev"
+load_dotenv()
+API_BASE_URL = os.getenv("API_URL")
 
 def add_expense_to_api(date, category, amount, note):
     """Send new expense data to backend Lambda"""
