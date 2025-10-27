@@ -68,6 +68,9 @@ def get_birthdays():
         data = response.json()
         if isinstance(data, dict) and "body" in data:
             data = json.loads(data["body"])
+        # if isinstance(data, dict) and "items" in data:
+        #     return data["items"]
+
         return data
     except Exception as e:
         return {"error": str(e)}
