@@ -1,15 +1,22 @@
+
+
 # Common backend utilities
+
 import json
-from datetime import datetime, timezone
+from decimal import Decimal
+
+#Custom encoder for Decimal (DynamoDB numeric types)
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
+
 
 def response(status_code, body):
-    """Standardized Lambda API response"""
+    """Format Lambda HTTP response"""
     return {
         "statusCode": status_code,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(body)
+        "body": json.dumps(body, cls=DecimalEncoder),
+        "headers": {"Content-Type": "application/json"}
     }
-
-def get_current_timestamp():
-    """Get current UTC timestamp"""
-    return datetime.now(timezone.utc).isoformat()
