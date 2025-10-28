@@ -1,40 +1,60 @@
+
 # DynamoDB CRUD operations
 
+# DynamoDB CRUD operations
 import os
 import boto3
+import uuid
 from decimal import Decimal
 from boto3.dynamodb.conditions import Key
 
-TABLE_NAME = os.getenv("DYNAMODB_TABLE", "PersonalExpenses")
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(TABLE_NAME)
+table_name = os.environ["DYNAMODB_TABLE"]
+table = dynamodb.Table(table_name)
 
+def add_expense(date, category, amount, note=""):
+    """Add a new expense item"""
+    month_category = f"{date[:7]}#{category}"
+    date_id = f"{date}#{str(uuid.uuid4())}"
 
-def add_expense(item: dict):
-    """Insert a new expense item into DynamoDB"""
-    if isinstance(item.get("amount"), float):
-        item["amount"] = Decimal(str(item["amount"]))
+    item = {
+        "month_category": month_category,
+        "date_id": date_id,
+        "date": date,
+        "category": category,
+        "amount": Decimal(str(amount)),
+        "note": note
+    }
+
     table.put_item(Item=item)
-    return {"status": "success", "message": "Expense added successfully"}
+    return {"status": "success", "message": "Expense added!"}
 
 
-def get_all_expenses():
-    """Return all expense items"""
-    resp = table.scan()
-    items = resp.get("Items", [])
-    # Convert Decimal → float
-    for item in items:
-        if "amount" in item:
-            item["amount"] = float(item["amount"])
-    return items
+def get_expenses(month=None, category=None):
+    """Fetch expenses (all or filtered by month/category)"""
+    if month and category:
+        month_category = f"{month}#{category}"
+        response = table.query(
+            KeyConditionExpression=Key("month_category").eq(month_category)
+        )
+    else:
+        response = table.scan()
+
+    return response.get("Items", [])
 
 
-def get_category_summary():
-    """Aggregate total spent per category"""
-    items = get_all_expenses()
+def get_monthly_summary(month):
+    """Fetch category-wise summary for a month"""
+    response = table.scan()
+    items = response.get("Items", [])
+
+    filtered = [i for i in items if i["month_category"].startswith(month)]
+
     summary = {}
-    for i in items:
-        category = i.get("category", "Unknown")
-        summary[category] = summary.get(category, 0) + i.get("amount", 0)
-    result = [{"category": k, "total_amount": v} for k, v in summary.items()]
-    return result
+    for i in filtered:
+        cat = i["category"]
+        summary[cat] = summary.get(cat, 0) + float(i["amount"])
+
+    return [{"category": k, "amount": v} for k, v in summary.items()]
+
+
