@@ -7,6 +7,7 @@ import boto3
 import uuid
 from decimal import Decimal
 from boto3.dynamodb.conditions import Key
+from collections import defaultdict
 
 dynamodb = boto3.resource("dynamodb")
 table_name = os.environ["DYNAMODB_TABLE"]
@@ -44,17 +45,21 @@ def get_expenses(month=None, category=None):
 
 
 def get_monthly_summary(month):
-    """Fetch category-wise summary for a month"""
+    """Return category-wise total expenses for the given month"""
     response = table.scan()
     items = response.get("Items", [])
 
-    filtered = [i for i in items if i["month_category"].startswith(month)]
+    category_totals = defaultdict(Decimal)
 
-    summary = {}
-    for i in filtered:
-        cat = i["category"]
-        summary[cat] = summary.get(cat, 0) + float(i["amount"])
+    # Aggregate totals for items belonging to this month
+    for item in items:
+        if item.get("date", "").startswith(month):
+            category = item.get("category", "Unknown")
+            amount = Decimal(str(item.get("amount", 0)))
+            category_totals[category] += amount
 
-    return [{"category": k, "amount": v} for k, v in summary.items()]
+    # Convert to simple JSON-serializable list
+    summary = [{"category": cat, "total": float(total)} for cat, total in category_totals.items()]
+    return summary
 
 

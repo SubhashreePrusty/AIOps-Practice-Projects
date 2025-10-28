@@ -18,10 +18,14 @@ def show_view_expenses():
     st.subheader(f"💰 Total Spending: ₹{total:.2f}")
 
     st.divider()
-    st.subheader("📈 Category-wise Summary")
+    st.subheader("📈 Category-wise Summary (Current Month)")
 
     summary_df = get_category_summary()
     if not summary_df.empty:
-        st.bar_chart(summary_df.set_index("category"))
+        try:
+            # st.bar_chart(summary_df.set_index("category")["total"])
+            st.dataframe(summary_df, use_container_width=True)
+        except Exception as e:
+            st.error(f"💥 Error displaying summary: {e}")
     else:
-        st.info("No summary data available yet.")
+        st.info("No summary data available yet for this month.")
