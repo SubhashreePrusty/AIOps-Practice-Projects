@@ -8,7 +8,7 @@ from datetime import datetime
 
 load_dotenv()
 API_URL = os.getenv("API_URL")
-
+    
 def add_expense_to_api(date, category, amount, note):
     """Send new expense data to backend Lambda"""
     payload = {
@@ -32,17 +32,24 @@ def get_all_expenses():
         response.raise_for_status()
         data = response.json()
 
-        # Convert to DataFrame
-        df = pd.DataFrame(data) if data else pd.DataFrame()
+        if not data:
+            return pd.DataFrame()
 
-        # Keep only the required columns (if they exist)
-        expected_cols = ["category", "amount", "date", "note"]
-        df = df[[col for col in expected_cols if col in df.columns]]
+        # 🟢 Keep ALL keys, not just visible columns
+        df = pd.DataFrame(data)
+
+        # ✅ Make sure required backend keys exist
+        required_cols = ["month_category", "date_id"]
+        for col in required_cols:
+            if col not in df.columns:
+                df[col] = None
 
         return df
+
     except requests.exceptions.RequestException as e:
         st.error(f"⚠️ Failed to fetch expenses: {e}")
         return pd.DataFrame()
+
 
 def get_category_summary():
     """Fetch category-wise summary for the current month up to today"""
@@ -71,7 +78,7 @@ def get_category_summary():
 
 # 🟢 Update Expense
 def update_expense_in_api(month_category, date_id, category, amount, note):
-    """Update an existing expense via API"""
+    """Update an existing expense via API — verbose debugging version."""
     payload = {
         "month_category": month_category,
         "date_id": date_id,
@@ -79,13 +86,31 @@ def update_expense_in_api(month_category, date_id, category, amount, note):
         "amount": float(amount),
         "note": note
     }
+
+    if not API_URL:
+        st.error("⚠️ API_URL is not set in environment variables. Current value: None or empty.")
+        return {"status": "error", "error": "API_URL missing"}
+
+    url = f"{API_URL.rstrip('/')}/expenses"
+    # st.write(f"DEBUG: PUT -> {url}")
+    # st.write("DEBUG payload:", payload)
+
     try:
-        response = requests.put(f"{API_URL}/expenses", json=payload)
-        response.raise_for_status()
-        return response.json()
+        response = requests.put(url, json=payload, timeout=10)
+        # Show everything helpful in the UI and logs
+        # st.write(f"DEBUG: status_code = {response.status_code}")
+        # st.write(f"DEBUG: response.text = {response.text}")
+        try:
+            json_resp = response.json()
+        except Exception:
+            json_resp = {"raw_text": response.text}
+        return {"status": "ok", "http_status": response.status_code, "response": json_resp}
     except requests.exceptions.RequestException as e:
-        st.error(f"⚠️ Failed to update expense: {e}")
-        return {"status": "error"}
+        st.error(f"⚠️ RequestException: {e}")
+        # also print full repr to the streamlit server logs
+        print("Update exception:", repr(e))
+        return {"status": "error", "error": str(e)}
+
 
 
 # 🟢 Delete Expense

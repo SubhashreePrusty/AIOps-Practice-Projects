@@ -1,14 +1,8 @@
-
-# view_expenses.py
 import streamlit as st
-import requests
 import pandas as pd
-from utils import (
-    get_all_expenses,
-    get_category_summary,
-    update_expense_in_api,
-    delete_expense_from_api
-)
+from utils import get_all_expenses, get_category_summary
+from edit_expense import edit_expense_form
+from delete_expense import handle_delete_expense
 
 
 def show_view_expenses():
@@ -20,11 +14,10 @@ def show_view_expenses():
         st.warning("No expenses found yet. Add some!")
         return
 
-    # ✅ Keep full data for backend keys, but only show required columns to user
+    # ✅ Keep backend keys but show only necessary columns
     expected_cols = ["date", "category", "amount", "note", "month_category", "date_id"]
     df_full = df_full[[c for c in expected_cols if c in df_full.columns]]
 
-    display_cols = ["date", "category", "amount", "note"]
     st.write("### 💸 Expense List")
 
     # ✅ Table headers
@@ -33,7 +26,11 @@ def show_view_expenses():
     for col, name in zip(header_cols, headers):
         col.markdown(f"**{name}**")
 
-    # ✅ Loop through each expense
+    # ✅ Track which expense is being edited
+    if "edit_index" not in st.session_state:
+        st.session_state.edit_index = None
+
+    # ✅ Loop through each expense row
     for i, row in df_full.iterrows():
         col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 2, 3, 1, 1])
 
@@ -45,45 +42,18 @@ def show_view_expenses():
         edit_btn = col5.button("✏️", key=f"edit_{i}")
         del_btn = col6.button("🗑️", key=f"del_{i}")
 
-        # --- Handle Edit action ---
+        # ✅ When edit button clicked, store which item is being edited
         if edit_btn:
-            with st.form(f"edit_form_{i}", clear_on_submit=True):
-                st.subheader("✏️ Edit Expense")
+            st.session_state.edit_index = i
 
-                new_date = st.date_input("Date", pd.to_datetime(row["date"]))
-                new_category = st.text_input("Category", value=row["category"])
-                new_amount = st.number_input("Amount", value=float(row["amount"]))
-                new_note = st.text_area("Note", value=row["note"] or "")
+        # ✅ Show edit form for the selected index
+        if st.session_state.edit_index == i:
+            edit_expense_form(row, i)
 
-                submitted = st.form_submit_button("💾 Save Changes")
-
-                if submitted:
-                    resp = update_expense_in_api(
-                        row.get("month_category"), 
-                        row.get("date_id"),
-                        new_category, 
-                        new_amount, 
-                        new_note
-                    )
-                    if resp.get("status") == "success":
-                        st.success("✅ Expense updated successfully!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to update expense.")
-
-        # --- Handle Delete action ---
         if del_btn:
-            if "month_category" in row and "date_id" in row:
-                resp = delete_expense_from_api(row["month_category"], row["date_id"])
-                if resp.get("status") == "success":
-                    st.success("🗑️ Expense deleted successfully!")
-                    st.rerun()
-                else:
-                    st.error("❌ Failed to delete expense.")
-            else:
-                st.error("⚠️ Missing keys for deletion — cannot delete this record.")
+            handle_delete_expense(row)
 
-    # --- Total summary ---
+    # --- Summary ---
     total = df_full["amount"].sum()
     st.subheader(f"💰 Total Spending: ₹{total:.2f}")
 
@@ -92,10 +62,6 @@ def show_view_expenses():
 
     summary_df = get_category_summary()
     if not summary_df.empty:
-        try:
-            # st.bar_chart(summary_df.set_index("category")["total"])
-            st.dataframe(summary_df, use_container_width=True)
-        except Exception as e:
-            st.error(f"💥 Error displaying summary: {e}")
+        st.dataframe(summary_df, use_container_width=True)
     else:
         st.info("No summary data available yet for this month.")
