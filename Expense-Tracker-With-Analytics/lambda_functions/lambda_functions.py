@@ -2,7 +2,7 @@
 
 import json
 from utils import response
-from db_operations import add_expense, get_expenses, get_monthly_summary
+from db_operations import add_expense, get_expenses, get_monthly_summary, update_expense, delete_expense
 
 def lambda_handler(event, context):
     http_method = event.get("httpMethod")
@@ -35,10 +35,36 @@ def lambda_handler(event, context):
             category = params.get("category")
             items = get_expenses(month, category)
             return response(200, items)
+        
+        # ✅ UPDATE EXPENSE (Edit)
+        elif http_method == "PUT" and "/expenses" in path:
+            month_category = body.get("month_category")
+            date_id = body.get("date_id")
+            new_category = body.get("category")
+            new_amount = body.get("amount")
+            new_note = body.get("note", "")
+
+            if not (month_category and date_id):
+                return response(400, {"error": "Missing required keys for update"})
+
+            result = update_expense(month_category, date_id, new_category, new_amount, new_note)
+            return response(200, result)
+
+        # ✅ DELETE EXPENSE
+        elif http_method == "DELETE" and "/expenses" in path:
+            month_category = params.get("month_category")
+            date_id = params.get("date_id")
+
+            if not (month_category and date_id):
+                return response(400, {"error": "Missing required keys for delete"})
+
+            result = delete_expense(month_category, date_id)
+            return response(200, result)
 
         # ------------------ Unsupported ------------------
         else:
             return response(400, {"error": "Unsupported method or path"})
+        
 
     except Exception as e:
         print(f"❌ Error: {e}")
