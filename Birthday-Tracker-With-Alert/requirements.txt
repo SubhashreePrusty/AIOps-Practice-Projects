@@ -1,8 +1,5 @@
-# Core
 streamlit
 requests
 boto3
 python-dotenv
 
-# Optional (useful during development)
-# pytest

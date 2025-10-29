@@ -1,15 +1,13 @@
-```
-python -m venv venv
-venv\Scripts\activate
-streamlit run streamlit_app/app.py
-```
+# Project - Birthday Tracker 🎂
 
-If there is a problem to create the virtual environment, run this command -
-#### Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+#### This application helps you track birthdays of your friends and send alerts.
 
-To revert later - 
-#### Set-ExecutionPolicy -ExecutionPolicy Restricted -Scope CurrentUser
+## Features:
+- Add, view, and delete birthdays.
+- Receive email alerts (11:00pm IST) for upcoming birthdays and (9:00am IST) for current birthdays.
 
+
+## Folder Structure of the project
 
 ```
 birthday-tracker/
@@ -17,32 +15,39 @@ birthday-tracker/
 ├── .gitignore
 ├── requirements.txt
 ├── README.md
-├── .env                        # (optional, for API URL, region, etc.)
+├── .env                        
 │
-├── venv/                       # Virtual environment (created locally)
+├── venv/                  
 │
 ├── streamlit_app/
-│   ├── app.py                  # Main Streamlit frontend
-│   ├── api_client.py           # Functions that call AWS API Gateway
-│   └── utils.py                # Helper functions (e.g., date formatting)
+│   ├── app.py                  
+│   ├── api_client.py  
+│   ├── next_birthday.py                  
+│   ├── view_birthday.py           
+│   └── utils.py                
 │
-├── lambda_functions/
+├── lambda_functions/               # (Codes should be tested in the AWS lambda consoles)
 │   ├── add_birthday/
-│   │   └── app.py              # Lambda for adding new birthdays
+│   │   └── app.py              
 │   ├── get_birthdays/
-│   │   └── app.py              # Lambda for viewing birthdays
+│   │   └── app.py             
 │   ├── delete_birthday/
-│   │   └── app.py              # Lambda for deleting a record
+│   │   └── app.py              
 │   └── daily_reminder/
-│       └── app.py              # Lambda triggered daily by EventBridge
-│
-├── infrastructure/
-│   ├── create_dynamodb_table.py   # (Optional) boto3 script to create DynamoDB table
-│   ├── create_sns_topic.py        # (Optional) to create SNS topic
-│   └── deploy_lambda.sh           # (Optional) helper script for zipping & uploading Lambdas
-│
-└── tests/
-    └── test_sample.py          # (Optional) Unit tests for core logic
-
+│       └── app.py              
 
 ```
+
+### .env format
+
+```
+API_URL=
+DYNAMODB_TABLE=
+SNS_TOPIC_ARN=
+```
+
+## Featured Demonstrations
+
+
+
+
