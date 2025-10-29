@@ -26,6 +26,8 @@ personal_expense_tracker/
 │   ├── db_operations.py           # DynamoDB CRUD operations
 │   ├── s3_backup.py               # (Optional) Weekly CSV backup logic
 │   └── utils.py                   # Common backend utilities
+│   └── delete_expense.py          
+│   └── edit_expense.py            
 │
 ├── .env.example                   # Template for environment variables
 ├── .gitignore                     # Ignore unnecessary files
