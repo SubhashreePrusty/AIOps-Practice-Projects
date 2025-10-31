@@ -58,7 +58,7 @@ def show_add_expense():
             "Amount (₹)",
             min_value=0.0,
             step=0.5,
-            value=st.session_state.amount_input,
+            # value=st.session_state.amount_input,
             key="amount_input",
         )
 
