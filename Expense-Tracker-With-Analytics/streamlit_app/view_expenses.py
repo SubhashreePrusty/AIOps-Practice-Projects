@@ -3,13 +3,14 @@ import pandas as pd
 from utils import get_all_expenses, get_category_summary
 from edit_expense import edit_expense_form
 from delete_expense import handle_delete_expense
-
+from datetime import datetime
 
 def show_view_expenses():
     st.header("📊 View & Manage Expenses")
-
+    current_month = datetime.now().strftime("%Y-%m")
     df_full = get_all_expenses()
-
+    df_full = df_full[df_full["date"].str.startswith(current_month)]
+    
     if df_full.empty:
         st.warning("No expenses found yet. Add some!")
         return
@@ -58,9 +59,6 @@ def show_view_expenses():
         if st.session_state.edit_index == i:
             with st.container():
                 edit_expense_form(row, i)
-                if st.button("❌ Close", key=f"close_{i}"):
-                    st.session_state.edit_index = None
-                    st.rerun()
 
         # ✅ Handle delete only when not editing
         if del_btn and not editing_active:

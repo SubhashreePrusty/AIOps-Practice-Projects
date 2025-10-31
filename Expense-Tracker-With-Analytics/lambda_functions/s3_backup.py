@@ -1,82 +1,83 @@
-# s3_backup.py
 import boto3
 import os
-import pandas as pd
+import csv
 import io
 from datetime import datetime, timedelta
-from decimal import Decimal
+from collections import defaultdict
 
-# Initialize AWS clients
+# Initialize clients
 dynamodb = boto3.resource("dynamodb")
 s3 = boto3.client("s3")
 
-# Environment variables (set in Lambda configuration)
 TABLE_NAME = os.environ["DYNAMODB_TABLE"]
 BUCKET_NAME = os.environ["S3_BUCKET"]
-
 table = dynamodb.Table(TABLE_NAME)
 
 
 def lambda_handler(event, context):
-    """
-    This Lambda:
-    ✅ Backs up last month's category-wise summary to S3.
-    ✅ Deletes last month's data from DynamoDB.
-    ✅ Keeps current month's data untouched.
-    """
-    try:
-        # Step 1: Identify current + last month
-        today = datetime.now()
-        first_day_this_month = datetime(today.year, today.month, 1)
-        last_month_date = first_day_this_month - timedelta(days=1)
-        last_month = last_month_date.strftime("%Y-%m")
+    # 1️⃣ Get the last month string like "2025-09"
+    today = datetime.utcnow().date()
+    first_day_this_month = today.replace(day=1)
+    last_month_date = first_day_this_month - timedelta(days=1)
+    last_month_str = last_month_date.strftime("%Y-%m")
 
-        print(f"🗓️ Starting backup for {last_month}")
+    print(f"📦 Starting backup for {last_month_str}")
 
-        # Step 2: Fetch all data from DynamoDB
-        scan_resp = table.scan()
-        items = scan_resp.get("Items", [])
-        print(f"Fetched {len(items)} total records from DynamoDB")
+    # 2️⃣ Fetch all records from DynamoDB
+    response = table.scan()
+    items = response.get("Items", [])
 
-        # Step 3: Filter last month's data only
-        last_month_items = [item for item in items if item["date"].startswith(last_month)]
-        if not last_month_items:
-            print(f"No data found for {last_month}. Nothing to back up.")
-            return {"status": "no_data", "message": f"No records for {last_month}"}
+    # 3️⃣ Filter last month's records
+    last_month_items = [
+        item for item in items
+        if item.get("date", "").startswith(last_month_str)
+    ]
 
-        # Step 4: Prepare DataFrame for category-wise summary
-        df = pd.DataFrame(last_month_items)
-        df["amount"] = df["amount"].apply(lambda x: float(x) if isinstance(x, Decimal) else x)
-        summary_df = df.groupby("category", as_index=False)["amount"].sum()
+    if not last_month_items:
+        print("No records found for last month. Exiting.")
+        return {"statusCode": 200, "body": "No data to backup."}
 
-        # Step 5: Convert summary to CSV and upload to S3
-        csv_buffer = io.StringIO()
-        summary_df.to_csv(csv_buffer, index=False)
-        s3_key = f"summaries/{last_month}-summary.csv"
+    # 4️⃣ Summarize category-wise
+    summary = defaultdict(float)
+    for item in last_month_items:
+        category = item.get("category", "Uncategorized")
+        amount = float(item.get("amount", 0))
+        summary[category] += amount
 
-        s3.put_object(
-            Bucket=BUCKET_NAME,
-            Key=s3_key,
-            Body=csv_buffer.getvalue(),
-            ContentType="text/csv"
-        )
+    # 5️⃣ Generate CSV content (category, total)
+    csv_buffer = io.StringIO()
+    writer = csv.writer(csv_buffer)
+    writer.writerow(["Category", "Total Amount"])
+    for cat, total in summary.items():
+        writer.writerow([cat, total])
 
-        print(f"✅ Uploaded summary to s3://{BUCKET_NAME}/{s3_key}")
+    csv_data = csv_buffer.getvalue()
 
-        # Step 6: Delete last month's records from DynamoDB
-        with table.batch_writer() as batch:
-            for item in last_month_items:
-                batch.delete_item(
-                    Key={
-                        "month_category": item["month_category"],
-                        "date_id": item["date_id"]
-                    }
-                )
+    # 6️⃣ Upload to S3 (inside folder named after month)
+    s3_key = f"{last_month_str}/category_summary_{last_month_str}.csv"
+    s3.put_object(
+        Bucket=BUCKET_NAME,
+        Key=s3_key,
+        Body=csv_data,
+        ContentType="text/csv"
+    )
 
-        print(f"🧹 Deleted {len(last_month_items)} records for {last_month}")
+    print(f"✅ Uploaded summary CSV to s3://{BUCKET_NAME}/{s3_key}")
 
-        return {"status": "success", "message": f"Backup complete for {last_month}"}
+    # 7️⃣ Delete old month data from DynamoDB
+    with table.batch_writer() as batch:
+        for item in last_month_items:
+            batch.delete_item(
+                Key={
+                    "month_category": item["month_category"],
+                    "date_id": item["date_id"]
+                }
+            )
 
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return {"status": "error", "message": str(e)}
+    print(f"🧹 Deleted {len(last_month_items)} records from DynamoDB for {last_month_str}")
+
+
+    return {
+        "statusCode": 200,
+        "body": f"Backup completed and {len(last_month_items)} records deleted for {last_month_str}"
+    }
