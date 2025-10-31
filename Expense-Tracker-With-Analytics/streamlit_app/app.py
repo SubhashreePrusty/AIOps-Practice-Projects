@@ -15,3 +15,6 @@ elif page == "View Expenses":
     show_view_expenses()
 else:
     show_analytics()
+
+st.markdown("---")
+st.caption("Built with ❤️ using Streamlit + AWS Lambda + DynamoDB -- by Sayonika, Samiksha, and Pratik!")

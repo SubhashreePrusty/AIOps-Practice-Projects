@@ -19,8 +19,14 @@ def edit_expense_form(row, i):
             new_amount = st.number_input("Amount", min_value=0.0, value=float(row["amount"]), step=10.0)
             new_note = st.text_area("Note", value=row.get("note", ""))
 
-            submitted = st.form_submit_button("💾 Save Changes")
+            # --- Save and Cancel Buttons ---
+            col1, col2 = st.columns(2)
+            with col1:
+                submitted = st.form_submit_button("💾 Save Changes")
+            with col2:
+                cancel = st.form_submit_button("❌ Cancel")
 
+            # --- Handle Save ---
             if submitted:
                 resp = update_expense_in_api(
                     row.get("month_category"),
@@ -30,7 +36,6 @@ def edit_expense_form(row, i):
                     new_note
                 )
 
-                # 🔍 Handle nested API response
                 backend_resp = resp.get("response", {})
                 status = backend_resp.get("status") or resp.get("status")
 
@@ -42,3 +47,7 @@ def edit_expense_form(row, i):
                     st.error("❌ Failed to update expense.")
                     st.write("Full API response:", resp)
 
+            # --- Handle Cancel ---
+            if cancel:
+                st.session_state.edit_index = None
+                st.rerun()
