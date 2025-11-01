@@ -52,6 +52,7 @@ SNS_TOPIC_ARN=
 
 <img width="1920" height="1128" alt="ui1" src="https://github.com/user-attachments/assets/7eb49c7f-c4f4-44b8-9e38-c3555df61cad" />
 
+
 <img width="1920" height="1128" alt="ui2" src="https://github.com/user-attachments/assets/c8d13cdf-c000-4c56-a47b-be5a310323fa" />
 
 #### DynamoDB Table
@@ -69,5 +70,9 @@ SNS_TOPIC_ARN=
 #### SNS Topic
 
 <img width="1920" height="1128" alt="sns_topic" src="https://github.com/user-attachments/assets/1c44da26-485d-4ca0-9f7b-a3e6dff8d807" />
+
+#### Email Alerts
+
+<img width="1920" height="1020" alt="email-alerts" src="https://github.com/user-attachments/assets/7fb8ad22-19f2-4846-a093-e4b3419121e8" />
 
 #### ------ END ------
